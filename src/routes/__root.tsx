@@ -79,6 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Plateforme white-label pour agences d'études à l'étranger. Suivez vos étudiants à travers un parcours en 7 étapes — candidatures, documents, visa, départ.",
       },
+      { property: "og:title", content: "StudyAbroad — Plateforme agences d'études à l'étranger" },
+      { name: "twitter:title", content: "StudyAbroad — Plateforme agences d'études à l'étranger" },
+      { name: "description", content: "A white-label B2B SaaS platform for study abroad agencies, enabling student management and application tracking." },
+      { property: "og:description", content: "A white-label B2B SaaS platform for study abroad agencies, enabling student management and application tracking." },
+      { name: "twitter:description", content: "A white-label B2B SaaS platform for study abroad agencies, enabling student management and application tracking." },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
