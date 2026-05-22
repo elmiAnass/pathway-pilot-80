@@ -10,13 +10,13 @@ export const Route = createFileRoute("/_authenticated/student")({
 });
 
 function StudentLayout() {
-  const { isStudent, isAdmin, loading } = useAuth();
+  const { isStudent, isStaff, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (loading) return;
-    if (!isStudent && isAdmin) navigate({ to: "/admin" });
-  }, [loading, isStudent, isAdmin, navigate]);
+    if (!isStudent && isStaff) navigate({ to: "/admin" });
+  }, [loading, isStudent, isStaff, navigate]);
 
   return (
     <div className="min-h-screen bg-background pb-28">
