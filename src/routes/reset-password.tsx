@@ -17,7 +17,7 @@ export const Route = createFileRoute("/reset-password")({
 function ResetPasswordPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { user, refresh, isAdmin } = useAuth();
+  const { user, refresh, isStaff } = useAuth();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,7 @@ function ResetPasswordPage() {
     await refresh();
     setLoading(false);
     toast.success("Password updated");
-    navigate({ to: isAdmin ? "/admin" : "/student" });
+    navigate({ to: isStaff ? "/admin" : "/student" });
   };
 
   return (
