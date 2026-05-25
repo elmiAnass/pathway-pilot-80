@@ -26,6 +26,7 @@ export function GenericDocumentStep({
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [submitting, setSubmitting] = useState(false);
 
   const { data: docs = [] } = useQuery({
     queryKey: ["documents", user?.id, step],
@@ -47,14 +48,22 @@ export function GenericDocumentStep({
       .filter((s) => s.mandatory)
       .every((m) => docs.some((d) => d.type === m.type));
     if (!haveAll) return toast.error("Téléversez tous les documents obligatoires");
-    await supabase
-      .from("step_progress")
-      .upsert(
-        { user_id: user.id, step, status: "pending_review" },
-        { onConflict: "user_id,step" },
-      );
-    qc.invalidateQueries({ queryKey: ["step_progress"] });
-    toast.success("Soumis pour validation");
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("step_progress")
+        .upsert(
+          { user_id: user.id, step, status: "pending_review" },
+          { onConflict: "user_id,step" },
+        );
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["step_progress"] });
+      toast.success("Soumis pour validation");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Échec");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -72,8 +81,16 @@ export function GenericDocumentStep({
           existing={docs.filter((d) => d.type === s.type)}
         />
       ))}
-      <Button onClick={submit} className="w-full bg-gradient-gold text-primary-foreground shadow-gold">
-        Soumettre pour validation
+      <Button
+        onClick={submit}
+        disabled={submitting}
+        className="w-full bg-gradient-gold text-primary-foreground shadow-gold"
+      >
+        {submitting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          "Soumettre pour validation"
+        )}
       </Button>
     </div>
   );
