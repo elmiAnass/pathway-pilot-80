@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, Check, X, Clock, Trash2 } from "lucide-react";
+import { Upload, FileText, Check, X, Clock, Trash2, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
