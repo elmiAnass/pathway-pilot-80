@@ -113,6 +113,24 @@ function StudentHome() {
   );
 }
 
+function RoadmapSkeleton() {
+  return (
+    <div className="px-5 pt-8">
+      <Skeleton className="h-3 w-24" />
+      <Skeleton className="mt-2 h-7 w-48" />
+      <Skeleton className="mt-5 h-20 w-full rounded-2xl" />
+      <div className="mt-8 space-y-5">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 pl-5">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-20 flex-1 rounded-2xl" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function NodeBubble({ status, index }: { status: string; index: number }) {
   if (status === "approved") {
     return (
