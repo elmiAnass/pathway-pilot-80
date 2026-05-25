@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { buildStepMap, progressPct, STEPS, STEP_KEYS } from "@/lib/steps";
 import { Check, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/student/")({
   component: StudentHome,
