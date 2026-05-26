@@ -211,7 +211,7 @@ export function Step1Info() {
         {
           user_id: user.id,
           step: 1,
-          status: "completed",
+          status: "approved",
           data: { personal_info, academic_info },
         },
         { onConflict: "user_id,step" },
