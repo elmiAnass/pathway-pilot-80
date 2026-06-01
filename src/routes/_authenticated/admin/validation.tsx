@@ -5,7 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Check, X, ExternalLink, Clock } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { FileText, Check, X, ExternalLink, Clock, CheckCheck, User } from "lucide-react";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { approveDocument } from "@/lib/agency.functions";
@@ -28,14 +34,21 @@ type DocRow = {
   studentEmail?: string;
 };
 
+type StudentGroup = {
+  userId: string;
+  name: string;
+  email: string;
+  docs: DocRow[];
+};
+
 function Validation() {
   const qc = useQueryClient();
   const approve = useServerFn(approveDocument);
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
 
   const { data: docs = [] } = useQuery({
     queryKey: ["pending-docs"],
     queryFn: async (): Promise<DocRow[]> => {
-      // RLS already scopes to staff-accessible docs
       const { data, error } = await supabase
         .from("documents")
         .select("id,type,file_url,file_name,status,step,user_id,is_mandatory")
@@ -58,6 +71,23 @@ function Validation() {
   const pending = docs.filter((d) => d.status === "pending");
   const reviewed = docs.filter((d) => d.status !== "pending");
 
+  // Group pending docs by student
+  const groups: StudentGroup[] = (() => {
+    const m = new Map<string, StudentGroup>();
+    for (const d of pending) {
+      if (!m.has(d.user_id)) {
+        m.set(d.user_id, {
+          userId: d.user_id,
+          name: d.studentName ?? "—",
+          email: d.studentEmail ?? "",
+          docs: [],
+        });
+      }
+      m.get(d.user_id)!.docs.push(d);
+    }
+    return Array.from(m.values()).sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
   const decide = async (id: string, decision: "approved" | "rejected", feedback?: string) => {
     try {
       await approve({ data: { documentId: id, decision, feedback } });
@@ -68,26 +98,88 @@ function Validation() {
     }
   };
 
+  const approveAll = async (g: StudentGroup) => {
+    setBulkBusy(g.userId);
+    let ok = 0;
+    let fail = 0;
+    for (const d of g.docs) {
+      try {
+        await approve({ data: { documentId: d.id, decision: "approved" } });
+        ok++;
+      } catch {
+        fail++;
+      }
+    }
+    setBulkBusy(null);
+    if (ok) toast.success(`${ok} document(s) approuvé(s) pour ${g.name}`);
+    if (fail) toast.error(`${fail} échec(s)`);
+    qc.invalidateQueries({ queryKey: ["pending-docs"] });
+  };
+
   return (
     <div className="p-6 md:p-10 max-w-5xl">
       <h1 className="font-display text-3xl font-semibold">Validation des documents</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Approuvez les documents validés ou rejetez-les avec un motif.
+        Documents groupés par étudiant. Cliquez pour développer et valider.
       </p>
 
       <h2 className="mt-8 mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        En attente ({pending.length})
+        Étudiants en attente ({groups.length}) · {pending.length} document(s)
       </h2>
-      {pending.length === 0 && (
+
+      {groups.length === 0 && (
         <Card className="border-border bg-card p-8 text-center text-sm text-muted-foreground">
           Aucun document en attente. Bon travail !
         </Card>
       )}
-      <div className="space-y-3">
-        {pending.map((d) => (
-          <DocRow key={d.id} doc={d} onDecide={decide} />
-        ))}
-      </div>
+
+      {groups.length > 0 && (
+        <Accordion type="multiple" className="space-y-3">
+          {groups.map((g) => (
+            <AccordionItem
+              key={g.userId}
+              value={g.userId}
+              className="rounded-lg border border-border bg-card px-4"
+            >
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex w-full items-center justify-between gap-3 pr-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <p className="truncate font-medium">{g.name}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{g.email}</p>
+                    </div>
+                  </div>
+                  <Badge className="shrink-0 border-0 bg-warning/15 text-warning">
+                    <Clock className="mr-1 h-3 w-3" />
+                    {g.docs.length} en attente
+                  </Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3 pb-2">
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      className="bg-success text-success-foreground hover:opacity-90"
+                      disabled={bulkBusy === g.userId}
+                      onClick={() => approveAll(g)}
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      {bulkBusy === g.userId ? "En cours…" : "Tout approuver"}
+                    </Button>
+                  </div>
+                  {g.docs.map((d) => (
+                    <DocRow key={d.id} doc={d} onDecide={decide} />
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
 
       {reviewed.length > 0 && (
         <>
@@ -139,7 +231,7 @@ function DocRow({
   const [feedback, setFeedback] = useState("");
   const [rejecting, setRejecting] = useState(false);
   return (
-    <Card className="border-border bg-card p-4">
+    <Card className="border-border bg-background p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -147,12 +239,11 @@ function DocRow({
               <FileText className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="truncate font-medium">{doc.studentName ?? "—"}</p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {doc.studentEmail} · Étape {doc.step} ·{" "}
-                <span className="font-medium">{doc.type}</span>
+              <p className="truncate text-sm font-medium">
+                {doc.type}
                 {doc.is_mandatory && <span className="ml-1 text-destructive">*</span>}
               </p>
+              <p className="truncate text-[11px] text-muted-foreground">Étape {doc.step}</p>
             </div>
           </div>
           <a
@@ -165,9 +256,6 @@ function DocRow({
           </a>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge className="border-0 bg-muted text-muted-foreground">
-            <Clock className="mr-1 h-3 w-3" /> En attente
-          </Badge>
           <Button
             size="sm"
             className="bg-success text-success-foreground hover:opacity-90"
