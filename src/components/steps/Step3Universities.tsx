@@ -10,37 +10,39 @@ import { cn } from "@/lib/utils";
 
 const MAX = 5;
 
-type SuggestionRow = {
+type University = {
   id: string;
-  note: string | null;
-  universities: {
-    id: string;
-    name: string;
-    location: string;
-    country: string | null;
-    price: number | null;
-    ranking: number | null;
-    badges: string[] | null;
-    description: string | null;
-  } | null;
+  name: string;
+  location: string;
+  country: string | null;
+  price: number | null;
+  ranking: number | null;
+  badges: string[] | null;
+  description: string | null;
 };
 
 export function Step3Universities() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const { data: suggestions = [], isLoading } = useQuery({
+  const { data: universities = [], isLoading } = useQuery({
     queryKey: ["suggested-for-student", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: sug, error } = await supabase
         .from("suggested_universities")
-        .select(
-          "id,note,universities(id,name,location,country,price,ranking,badges,description)",
-        )
+        .select("university_id")
         .eq("student_id", user!.id);
       if (error) throw error;
-      return (data ?? []) as unknown as SuggestionRow[];
+      const ids = (sug ?? []).map((r) => r.university_id);
+      if (ids.length === 0) return [] as University[];
+      const { data, error: uErr } = await supabase
+        .from("universities")
+        .select("id,name,location,country,price,ranking,badges,description")
+        .in("id", ids)
+        .order("ranking", { ascending: true, nullsFirst: false });
+      if (uErr) throw uErr;
+      return (data ?? []) as University[];
     },
   });
 
