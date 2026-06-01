@@ -14,7 +14,7 @@ import {
   useDroppable,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { GripVertical, UserCog } from "lucide-react";
+import { GripVertical, Sparkles, UserCog } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { setStudentStep, reassignStudent } from "@/lib/agency.functions";
 import { toast } from "sonner";
@@ -25,6 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { SuggestUniversitiesDialog } from "@/components/admin/SuggestUniversitiesDialog";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin/students")({
   component: StudentsKanban,
