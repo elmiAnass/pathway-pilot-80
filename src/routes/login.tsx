@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { GraduationCap, Loader2 } from "lucide-react";
+import {
+  GraduationCap,
+  Loader2,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+} from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -17,105 +24,261 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { t, lang, setLang } = useI18n();
   const navigate = useNavigate();
-  const { isAuthenticated, loading: authLoading, profile, isDirector, isWorker, isStudent } = useAuth();
+
+  const {
+    isAuthenticated,
+    loading: authLoading,
+    profile,
+    isDirector,
+    isWorker,
+    isStudent,
+  } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
+
     if (isAuthenticated) {
-      if (profile?.must_change_password) navigate({ to: "/reset-password" });
-      else if (isDirector) navigate({ to: "/director/dashboard" });
-      else if (isWorker) navigate({ to: "/worker/dashboard" });
-      else if (isStudent) navigate({ to: "/student/portal" });
+      if (profile?.must_change_password) {
+        navigate({ to: "/reset-password" });
+      } else if (isDirector) {
+        navigate({ to: "/director/dashboard" });
+      } else if (isWorker) {
+        navigate({ to: "/worker/dashboard" });
+      } else if (isStudent) {
+        navigate({ to: "/student/portal" });
+      }
     }
-  }, [authLoading, isAuthenticated, profile, isDirector, isWorker, isStudent, navigate]);
+  }, [
+    authLoading,
+    isAuthenticated,
+    profile,
+    isDirector,
+    isWorker,
+    isStudent,
+    navigate,
+  ]);
+
+  const validateEmail = (value: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
+
+    if (!validateEmail(email)) {
+      toast.error("Veuillez saisir une adresse email valide.");
       return;
     }
-    toast.success("Welcome back");
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("Connexion réussie");
+    } catch {
+      toast.error("Une erreur inattendue est survenue.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Ambient gradient */}
-      <div className="pointer-events-none absolute inset-0 opacity-60">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
+      {/* Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#d4af3720_0%,transparent_40%)]" />
+
+        <div
+          className="
+            absolute inset-0
+            bg-[linear-gradient(to_right,hsl(var(--border)/0.15)_1px,transparent_1px),
+            linear-gradient(to_bottom,hsl(var(--border)/0.15)_1px,transparent_1px)]
+            bg-[size:50px_50px]
+          "
+        />
       </div>
 
-      {/* Lang switch */}
-      <div className="absolute right-4 top-4 z-10 flex gap-1 rounded-full border border-border bg-surface/80 p-1 backdrop-blur">
-        <button
-          onClick={() => setLang("fr")}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition ${lang === "fr" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-        >
-          FR
-        </button>
-        <button
-          onClick={() => setLang("ar")}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-        >
-          AR
-        </button>
+      {/* Language Switch */}
+      <div className="absolute right-5 top-5 z-20">
+        <div className="flex rounded-full border border-border/50 bg-card/80 p-1 backdrop-blur-xl">
+          <button
+            onClick={() => setLang("fr")}
+            className={`rounded-full px-4 py-2 text-xs font-medium transition-all ${
+              lang === "fr"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground"
+            }`}
+          >
+            FR
+          </button>
+
+          <button
+            onClick={() => setLang("ar")}
+            className={`rounded-full px-4 py-2 text-xs font-medium transition-all ${
+              lang === "ar"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground"
+            }`}
+          >
+            AR
+          </button>
+        </div>
       </div>
 
+      {/* Content */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 rounded-2xl bg-gradient-gold p-3 shadow-gold">
-              <GraduationCap className="h-7 w-7 text-primary-foreground" />
+          {/* Logo */}
+          <div className="mb-8 text-center">
+            <div
+              className="
+                mx-auto mb-5 flex h-20 w-20 items-center justify-center
+                rounded-3xl
+                bg-gradient-to-br
+                from-yellow-400
+                to-yellow-600
+                shadow-2xl
+              "
+            >
+              <GraduationCap className="h-10 w-10 text-black" />
             </div>
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+
+            <h1 className="text-3xl font-bold tracking-tight">
               {t("app.name")}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">{t("auth.login")}</p>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("auth.login")}
+            </p>
+
+            <p className="mt-3 text-sm text-muted-foreground">
+              Gérez les étudiants, dossiers et admissions depuis
+              une plateforme.
+            </p>
           </div>
 
-          <Card className="border-border/60 bg-card/80 p-6 backdrop-blur shadow-elevated">
-            <form onSubmit={onSubmit} className="space-y-4">
+          {/* Card */}
+          <Card
+            className="
+              rounded-3xl
+              border-border/50
+              bg-card/70
+              p-8
+              shadow-2xl
+              backdrop-blur-xl
+            "
+          >
+            <form onSubmit={onSubmit} className="space-y-5">
+              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">{t("auth.email")}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="email@example.com"
+                    className="pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
+
+              {/* Password */}
               <div className="space-y-2">
                 <Label htmlFor="password">{t("auth.password")}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="pl-10 pr-12"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* Forgot Password */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
+
+              {/* Submit */}
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-gold font-semibold text-primary-foreground shadow-gold hover:opacity-95"
+                className="
+                  h-12
+                  w-full
+                  rounded-xl
+                  bg-gradient-to-r
+                  from-yellow-500
+                  via-yellow-400
+                  to-yellow-500
+                  font-semibold
+                  text-black
+                  transition-all
+                  duration-300
+                  hover:scale-[1.02]
+                "
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("auth.signIn")}
+                {loading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  t("auth.signIn")
+                )}
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-xs text-muted-foreground">
-              Accès sur invitation uniquement — contactez votre agence pour recevoir vos
-              identifiants.
-            </p>
+            <div className="mt-8 border-t border-border/40 pt-5">
+              <p className="text-center text-xs leading-relaxed text-muted-foreground">
+                Accès réservé aux étudiants et aux collaborateurs
+                autorisés. Contactez votre agence pour obtenir vos
+                identifiants de connexion.
+              </p>
+            </div>
           </Card>
         </div>
       </div>
